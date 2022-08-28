@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - run: mkdir docs && cp -rf library docs/ && cp -rf demo docs/ && mv docs/demo/index.html docs/
+      - run: cp -rf library docs/ && cp -rf demo docs/ && mv docs/demo/index.html docs/
       - run: tar --directory docs/ -hcf artifact.tar .
       - uses: actions/upload-artifact@v3
         with:
