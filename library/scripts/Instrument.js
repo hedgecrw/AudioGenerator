@@ -26,12 +26,6 @@ export class Instrument {
       this.#maxNoteIndex = NoteOrder.findIndex((note) => note == maxNote);
    }
 
-   async #loadNoteSamples(audioContext, filePath) {
-      const response = await fetch(filePath);
-      const arrayBuffer = await response.arrayBuffer();
-      return await audioContext.decodeAudioData(arrayBuffer);
-   }
-
    async load(audioContext) {
       console.log('Loading instrument: ', this.name, '(' + ((this.subtype == null) ? '' : this.subtype + ' ') + this.type + ')...');
       let numResourceDownloaders = 16;
