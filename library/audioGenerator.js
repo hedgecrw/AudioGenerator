@@ -67,6 +67,14 @@ class AudioGenerator {
       this.globalTime += minimumDuration;
    }
 
+   startNote(track, note) {
+      return this.#tracks[track].playNoteAsync(note);
+   }
+
+   stopNote(track, noteDescriptor) {
+      this.#tracks[track].stopNoteAsync(noteDescriptor, true);
+   }
+
    start() {
       this.audioContext.resume();
    }
