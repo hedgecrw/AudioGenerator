@@ -1,8 +1,6 @@
-'use strict';
-
 import { NoteOrder, Note } from './Constants.js'
 
-class Instrument {
+export class Instrument {
    #minNoteIndex = 0;
    #maxNoteIndex = 120;
    #noteAudioBuffers = [];
@@ -56,5 +54,3 @@ class Instrument {
       return new AudioBufferSourceNode(audioContext, { buffer: this.#noteAudioBuffers[note] });
    }
 }
-
-export { Instrument };

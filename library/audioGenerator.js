@@ -1,5 +1,3 @@
-'use strict';
-
 import { Track } from './scripts/Track.js';
 import { Duration, Note } from './scripts/Constants.js';
 import { getAvailableInstruments, loadInstrument } from './scripts/InstrumentLibrary.js'

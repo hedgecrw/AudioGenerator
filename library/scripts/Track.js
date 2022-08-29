@@ -1,6 +1,4 @@
-'use strict';
-
-class Track {
+export class Track {
    #asyncNotes = {};
 
    constructor(audioContext, instrument, audioSink) {
@@ -55,5 +53,3 @@ class Track {
       }
    }
 }
-
-export { Track };

@@ -1,7 +1,3 @@
-'use strict';
-
-const InstrumentList = {
+export const InstrumentList = {
    'Grand Piano': { path: 'piano/grand/Default/', minNote: 'C1', maxNote: 'C8' }
 }
-
-export { InstrumentList };
