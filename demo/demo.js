@@ -70,6 +70,7 @@ async function changeInstrument() {
       window.audioGenerator.setTrackInstrument('defaultTrack', instrument);
       document.getElementById("piano").classList.remove("disabled");
       document.getElementById("status").textContent = 'Ready';
+      console.log('Instrument loading complete!');
    }
 }
 

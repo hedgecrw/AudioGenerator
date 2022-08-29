@@ -23,7 +23,7 @@ class AudioGenerator {
    }
 
    async retrieveInstrument(instrument) {
-      return await loadInstrument(this.audioContext, instrument);
+      return loadInstrument(this.audioContext, instrument);
    }
 
    createTrack(track, instrument) {

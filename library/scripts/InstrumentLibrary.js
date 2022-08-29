@@ -7,5 +7,5 @@ export function getAvailableInstruments() {
 
 export async function loadInstrument(audioContext, instrument) {
    const info = InstrumentList[instrument];
-   return await Instrument.loadInstrument(audioContext, info.path, info.minNote, info.maxNote);
+   return Instrument.loadInstrument(audioContext, info.path, info.minNote, info.maxNote);
 }
