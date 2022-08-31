@@ -19,7 +19,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - run: cp -rf library docs/ && cp -rf demo docs/ && mv docs/demo/index.html docs/
+      - run: cp -rf library docs/ && cp -rf demos docs/ && cp -rf tools docs/
+      - run: mv docs/demos/piano/pianodemo.html docs/ && mv docs/demos/score/scoredemo.html docs/
+      - run: mv docs/tools/instrument/instrument-creator.html docs/
       - run: tar --directory docs/ -hcf artifact.tar .
       - uses: actions/upload-artifact@v3
         with:
