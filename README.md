@@ -1,4 +1,9 @@
 # AudioGenerator
 Javascript library to generate music using the Web Audio API
 
-A demo can be accessed at the following link: https://hedgecrw.github.io/AudioGenerator/
+## Demos
+ - Live piano demo: https://hedgecrw.github.io/AudioGenerator/pianodemo.html
+ - Score creation demo: https://hedgecrw.github.io/AudioGenerator/scoredemo.html
+
+## Tools
+ - New instrument creator: https://hedgecrw.github.io/AudioGenerator/instrument-creator.html
