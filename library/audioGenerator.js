@@ -27,7 +27,7 @@ class AudioGenerator {
    }
 
    createTrack(track, instrument) {
-      this.#tracks[track] = new Track(this.audioContext, instrument, this.volumeControl);
+      this.#tracks[track] = new Track(this.audioContext, track, instrument, this.volumeControl);
    }
 
    setTrackInstrument(track, instrument) {
@@ -35,7 +35,8 @@ class AudioGenerator {
    }
 
    setGlobalVolume(volume) {
-      this.volumeControl.gain.setValueAtTime(volume, 0);
+      this.globalVolume = volume;
+      this.volumeControl.gain.setTargetAtTime(volume, this.audioContext.currentTime, 0.01);
    }
 
    setTrackVolume(track, volume) {
@@ -52,9 +53,9 @@ class AudioGenerator {
       return 60.0 / ((duration / this.beatBase) * this.beatsPerMinute);
    }
 
-   playNotes(track, notes, durations, immediate) {
+   playNotes(track, notes, durations) {
       let minimumDuration = 1000.0;
-      if (immediate)
+      if (this.audioContext.currentTime > this.globalTime)
          this.globalTime = this.audioContext.currentTime;
       for (let i = 0; i < notes.length; ++i) {
          const duration = this.#getNoteLength(durations[i]);
@@ -66,18 +67,33 @@ class AudioGenerator {
    }
 
    startNote(track, note) {
-      return this.#tracks[track].playNoteAsync(note);
+      return this.#tracks[track].playNoteAsync(note, this.audioContext.currentTime);
    }
 
-   stopNote(track, noteDescriptor) {
-      this.#tracks[track].stopNoteAsync(noteDescriptor, true);
+   stopNote(track, note) {
+      this.#tracks[track].stopNoteAsync(note, true);
    }
 
    start() {
+      this.volumeControl.gain.setTargetAtTime(this.globalVolume, this.audioContext.currentTime, 0.02);
       this.audioContext.resume();
    }
 
+   pause() {
+      this.volumeControl.gain.setTargetAtTime(0.0, this.audioContext.currentTime, 0.01);
+      setTimeout((function() { this.audioContext.suspend(); }).bind(this), 60);
+   }
+
    stop() {
+      this.volumeControl.gain.setTargetAtTime(0.0, this.audioContext.currentTime, 0.01);
+      setTimeout((function() {
+         this.audioContext.suspend();
+         for (const track in this.#tracks)
+            this.#tracks[track].stop();
+         this.audioContext.resume();
+         this.volumeControl.gain.setValueAtTime(this.globalVolume, 0.0);
+      }).bind(this), 60);
+      this.globalTime = 0.0;
    }
 }
 
