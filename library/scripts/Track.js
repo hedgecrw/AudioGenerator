@@ -1,7 +1,9 @@
 export class Track {
-   #asyncNotes = {};
+   #scheduledNotes = [];
+   #asyncNotes = [];
 
-   constructor(audioContext, instrument, audioSink) {
+   constructor(audioContext, name, instrument, audioSink) {
+      this.trackName = name;
       this.instrument = instrument;
       this.audioContext = audioContext;
       this.volumeControl = this.audioContext.createGain();
@@ -10,7 +12,7 @@ export class Track {
    }
 
    setVolume(volume) {
-      this.volumeControl.gain.setValueAtTime(volume, 0);
+      this.volumeControl.gain.setValueAtTime(volume, 0.0);
    }
 
    changeInstrument(instrument) {
@@ -21,35 +23,50 @@ export class Track {
       const noteSource = this.instrument.getNote(this.audioContext, note);
       const noteVolume = this.audioContext.createGain();
       noteSource.connect(noteVolume).connect(this.volumeControl);
-      noteVolume.gain.setValueAtTime(1.0, 0);
-      noteVolume.gain.linearRampToValueAtTime(0.0, startTime + durationSeconds);
-      noteSource.onended = function() { noteVolume.disconnect(); };
+      noteVolume.gain.setValueAtTime(1.0, 0.0);
+      noteVolume.gain.setTargetAtTime(0.0, startTime + durationSeconds - 0.1, 0.1);
+      noteSource.onended = this.#noteEnded.bind(this, noteSource, noteVolume);
+      this.#scheduledNotes.push(noteSource);
       noteSource.start(startTime);
-      noteSource.stop(startTime + durationSeconds);
+      noteSource.stop(startTime + durationSeconds + 0.2);
    }
 
-   playNoteAsync(note) {
-      const startTime = this.audioContext.currentTime;
-      const noteID = note.toString() + Math.floor(Math.random() * 100000000).toString();
+   playNoteAsync(note, startTime) {
       const noteSource = this.instrument.getNote(this.audioContext, note);
-      this.#asyncNotes[noteID] = this.audioContext.createGain();
-      noteSource.connect(this.#asyncNotes[noteID]).connect(this.volumeControl);
-      this.#asyncNotes[noteID].gain.setValueAtTime(1.0, 0);
-      this.#asyncNotes[noteID].gain.setTargetAtTime(0.0, startTime + 5.0, 0.1);
-      noteSource.onended = this.stopNoteAsync.bind(this, noteID, false);
+      const noteVolume = this.audioContext.createGain();
+      noteSource.connect(noteVolume).connect(this.volumeControl);
+      noteVolume.gain.setValueAtTime(1.0, 0.0);
+      noteVolume.gain.setTargetAtTime(0.0, startTime + 5.0, 0.1);
+      noteSource.onended = this.stopNoteAsync.bind(this, noteVolume, false);
+      this.#asyncNotes.push(noteVolume);
       noteSource.start(startTime);
       noteSource.stop(startTime + 5.0);
-      return noteID;
+      return noteVolume;
    }
 
-   stopNoteAsync(noteID, stoppedEarly) {
-      if (this.#asyncNotes.hasOwnProperty(noteID)) {
+   stopNoteAsync(note, stoppedEarly) {
+      const noteIndex = this.#asyncNotes.indexOf(note);
+      if (noteIndex >= 0) {
          if (stoppedEarly)
-            this.#asyncNotes[noteID].gain.setTargetAtTime(0.0, this.audioContext.currentTime, 0.1);
+            this.#asyncNotes[noteIndex].gain.setTargetAtTime(0.0, this.audioContext.currentTime, 0.1);
          else {
-            this.#asyncNotes[noteID].disconnect();
-            delete this.#asyncNotes[noteID];
+            this.#asyncNotes[noteIndex].disconnect();
+            this.#asyncNotes.splice(noteIndex, 1);
          }
       }
+   }
+
+   #noteEnded(note, volume) {
+      this.#scheduledNotes.splice(this.#scheduledNotes.indexOf(note), 1);
+      volume.disconnect();
+      if (this.#scheduledNotes.length === 0)
+         window.dispatchEvent(new CustomEvent('trackdone', { detail: this.trackName }));
+   }
+
+   stop() {
+      for (const volume of this.#asyncNotes)
+         volume.gain.setValueAtTime(0.0, 0.0);
+      for (const note of this.#scheduledNotes)
+         note.stop(0.0);
    }
 }

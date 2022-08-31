@@ -7,10 +7,9 @@ export class Instrument {
 
    constructor(path, minNote, maxNote) {
       this.pathBase = '';
-      const scripts = document.getElementsByTagName('script');
-      for (let i = 0; i < scripts.length; ++i)
-         if (scripts[i].src.includes('audioGenerator.js')) {
-            this.pathBase = scripts[i].src.replace(/^https?:\/\/[a-z\:0-9.]+/, '').split('?')[0];
+      for (const script of document.getElementsByTagName('script'))
+         if (script.src.includes('audioGenerator.js')) {
+            this.pathBase = script.src.replace(/^https?:\/\/[a-z\:0-9.]+/, '').split('?')[0];
             this.pathBase = this.pathBase.split('/').slice(0, -1).join('/');
          }
       path = path[0] == '/' ? path.substr(1) : path;
@@ -41,7 +40,7 @@ export class Instrument {
                worker.terminate();
             }
             this.#noteAudioBuffers[Note[NoteOrder[thisNoteIndex]]] = await audioContext.decodeAudioData(message.data);
-         };
+         }
          worker.onmessage = processResource.bind(this);
          worker.postMessage(this.path + NoteOrder[noteIndex++] + '.wav');
       }
@@ -53,8 +52,7 @@ export class Instrument {
    }
 
    static async loadInstrument(audioContext, path, minNote, maxNote) {
-      const instrument = new Instrument(path, minNote, maxNote);
-      return instrument.load(audioContext);
+      return new Instrument(path, minNote, maxNote).load(audioContext);
    }
 
    getNote(audioContext, note) {
