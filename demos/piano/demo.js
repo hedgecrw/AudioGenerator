@@ -61,7 +61,7 @@ function releaseNote(event) {
 }
 
 async function changeInstrument() {
-   instrumentSelector = document.getElementById('instrument');
+   const instrumentSelector = document.getElementById('instrument');
    const instrumentSelection = instrumentSelector.options[instrumentSelector.selectedIndex].value;
    if (instrumentSelector.selectedIndex > 0) {
       document.getElementById("status").textContent = 'Loading...';
@@ -77,10 +77,10 @@ async function changeInstrument() {
 window.addEventListener('keydown', pressNote);
 window.addEventListener('keyup', releaseNote);
 
-window.onload = (event) => {
+window.onload = () => {
    window.audioGenerator = new AudioGenerator();
    window.audioGenerator.createTrack('defaultTrack', null);
-   instrumentSelector = document.getElementById('instrument');
+   const instrumentSelector = document.getElementById('instrument');
    instrumentSelector.add(new Option('Choose an instrument'));
    window.audioGenerator.availableInstruments.forEach(d => instrumentSelector.add(new Option(d)));
 };

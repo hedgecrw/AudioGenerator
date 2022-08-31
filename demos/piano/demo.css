@@ -1,7 +1,7 @@
 .instrumentSelector, .piano {
   display: flex;
   justify-content: center;
-  margin-bottom: 12px;
+  margin: 12px auto 12px auto;
 }
 
 .white-key {
