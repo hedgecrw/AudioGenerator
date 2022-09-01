@@ -106,3 +106,6 @@ dist
 
 # TernJS port file
 .tern-port
+
+# Root-level HTML files
+*.html
