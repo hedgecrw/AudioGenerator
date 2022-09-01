@@ -8,3 +8,4 @@
 *.ogg binary
 *.wav binary
 *.aac binary
+*.inst binary
