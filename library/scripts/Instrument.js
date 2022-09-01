@@ -1,61 +1,85 @@
-import { NoteOrder, Note } from './Constants.js'
+import { Note } from './Constants.js'
+import { decompressSync } from './Fflate.js';
+
+function loadNumberFromArray(array, numBytes, offset) {
+   let number = 0;
+   for (let i = numBytes - 1; i >= 0; --i)
+      number = (number * 256) + array[offset + i];
+   return number;
+}
+
+function findClosestValidNote(noteData, noteIndex) {
+   let nearestLowerNote = -10000, nearestHigherNote = 10000;
+   for (let i = noteIndex - 1; i >= 0; --i)
+      if (noteData[i] !== undefined) {
+         nearestLowerNote = i;
+         break;
+      }
+   for (let i = noteIndex + 1; i < noteData.length; ++i)
+      if (noteData[i] !== undefined) {
+         nearestHigherNote = i;
+         break;
+      }
+   return ((noteIndex - nearestLowerNote) > (nearestHigherNote - noteIndex)) ? nearestHigherNote : nearestLowerNote;
+}
+
+function fillInMissingNotes(noteData, missingData) {
+   for (let note = 0; note < noteData.length; ++note)
+      if (noteData[note] === undefined) {
+         const closestValidNote = findClosestValidNote(noteData, note);
+         missingData[note] = {
+            'buffer': noteData[closestValidNote].buffer,
+            'detune': 100 * (note - closestValidNote)
+         };
+      }
+}
+
+async function loadNotesAndInterpolate(audioContext, instrumentData, noteData, missingData) {
+   let noteIndex = 2;
+   noteData.length = missingData.length = 1 + Note['B9'];
+   const numValidNotes = loadNumberFromArray(instrumentData, 2, 0);
+   for (let i = 0; i < numValidNotes; ++i) {
+      const note = loadNumberFromArray(instrumentData, 2, noteIndex);
+      noteIndex += 2;
+      const noteOffset = loadNumberFromArray(instrumentData, 4, noteIndex);
+      noteIndex += 4;
+      const noteOffsetEnd = loadNumberFromArray(instrumentData, 4, noteIndex);
+      noteIndex += 4;
+      noteData[note] = {
+         'buffer': await audioContext.decodeAudioData(decompressSync(instrumentData.slice(noteOffset, noteOffsetEnd)).buffer),
+         'detune': 0 };
+   }
+   fillInMissingNotes(noteData, missingData);
+}
 
 export class Instrument {
-   #minNoteIndex = 0;
-   #maxNoteIndex = 120;
-   #noteAudioBuffers = [];
+   #noteData = [];
 
-   constructor(path, minNote, maxNote) {
-      this.pathBase = '';
-      for (const script of document.getElementsByTagName('script'))
-         if (script.src.includes('audioGenerator.js')) {
-            this.pathBase = script.src.replace(/^https?:\/\/[a-z\:0-9.]+/, '').split('?')[0];
-            this.pathBase = this.pathBase.split('/').slice(0, -1).join('/');
-         }
-      path = path[0] == '/' ? path.substr(1) : path;
-      path = path.substr(-1) == '/' ? path : (path + '/');
-      const path_components = path.slice(0, -1).split('/');
-      for (let i = 0; i < path_components.length; ++i)
-         path_components[i] = path_components[i].split(' ').map((word) => { return word[0].toUpperCase() + word.substring(1) }).join(' ');
-      this.path = this.pathBase + '/instruments/' + path;
-      this.type = path_components[0];
-      this.subtype = (path_components.length == 3) ? path_components[1] : null;
-      this.name = (path_components.length == 3) ? path_components[2] : path_components[1];
-      this.#minNoteIndex = NoteOrder.findIndex((note) => note == minNote);
-      this.#maxNoteIndex = NoteOrder.findIndex((note) => note == maxNote);
+   constructor(name) {
+      this.name = name;
    }
 
-   async load(audioContext) {
-      console.log('Loading instrument: ', this.name, '(' + ((this.subtype == null) ? '' : this.subtype + ' ') + this.type + ')...');
-      let numResourceDownloaders = 16;
-      let noteIndex = this.#minNoteIndex;
-
-      function runWorker(worker) {
-         const thisNoteIndex = noteIndex;
-         async function processResource(message) {
-            if (noteIndex <= this.#maxNoteIndex)
-               runWorker.bind(this)(worker);
-            else {
-               --numResourceDownloaders;
-               worker.terminate();
-            }
-            this.#noteAudioBuffers[Note[NoteOrder[thisNoteIndex]]] = await audioContext.decodeAudioData(message.data);
-         }
-         worker.onmessage = processResource.bind(this);
-         worker.postMessage(this.path + NoteOrder[noteIndex++] + '.wav');
-      }
-
-      for (let i = 0; i < numResourceDownloaders; ++i)
-         runWorker.bind(this)(new Worker(this.pathBase + '/scripts/ResourceDownloader.js'));
-      const resultPromise = resolve => { (numResourceDownloaders === 0) ? resolve(this) : setTimeout(() => resultPromise(resolve), 100); };
-      return new Promise(resultPromise);
+   async #loadFromDataBuffer(audioContext, instrumentData) {
+      const noteData = [], missingData = [];
+      await loadNotesAndInterpolate(audioContext, instrumentData, noteData, missingData);
+      for (let i = 0; i < noteData.length; ++i)
+         this.#noteData[i] = (noteData[i] === undefined) ? missingData[i] : noteData[i];
    }
 
-   static async loadInstrument(audioContext, path, minNote, maxNote) {
-      return new Instrument(path, minNote, maxNote).load(audioContext);
+   async #load(audioContext, url) {
+      console.log('Loading instrument:', this.name + '...');
+      const response = await fetch(url);
+      const resource = await response.arrayBuffer();
+      await this.#loadFromDataBuffer(audioContext, new Uint8Array(resource));
+   }
+
+   static async loadInstrument(audioContext, name, url) {
+      const instrument = new Instrument(name);
+      const loadPromise = instrument.#load(audioContext, url);
+      return new Promise(async resolve => { await loadPromise; resolve(instrument); });
    }
 
    getNote(audioContext, note) {
-      return new AudioBufferSourceNode(audioContext, { buffer: this.#noteAudioBuffers[note] });
+      return new AudioBufferSourceNode(audioContext, this.#noteData[note]);
    }
 }
