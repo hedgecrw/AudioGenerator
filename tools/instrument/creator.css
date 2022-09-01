@@ -1,5 +1,32 @@
-.status {
+body {
   display: flex;
   justify-content: center;
-  margin: 12px auto 12px auto;
+}
+
+p {
+  margin-block-start: 0;
+}
+
+input, button {
+  margin-top: 15px;
+}
+
+span {
+  display: inline;
+}
+
+.instructions {
+  width: 800px;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
+
+.error {
+  color: red;
+  font-weight: 600;
+}
+
+.hidden {
+  visibility: hidden;
 }
