@@ -109,3 +109,6 @@ dist
 
 # Root-level HTML files
 *.html
+
+# Raw SoundFont/audio files
+rawAudioData/
